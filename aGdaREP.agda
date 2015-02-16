@@ -23,6 +23,10 @@ data Error : Set where
   TooManyClosingParentheses   : Error
   NotEnoughClosingParentheses : Error
 
+showError : Error → String
+showError TooManyClosingParentheses   = "Too many closing parentheses"
+showError NotEnoughClosingParentheses = "Not enough closing parentheses"
+
 parse : List (RegExp → RegExp) → List Char → RegExp ⊎ Error
 parse []           _                = inj₂ TooManyClosingParentheses
 parse (e ∷ [])     []               = inj₁ $ e ε
@@ -44,15 +48,56 @@ parse (e ∷ es)     (a   ∷ xs)       = parse ((λ f → e (RE.[ a ] `∙ f)) 
 parseRegExp : String → RegExp ⊎ Error
 parseRegExp = parse (id ∷ []) ∘ Str.toList
 
-select : RegExp → String → Maybe String
-select e str = dec (substring e (Str.toList str)) (just ∘′ grab) (const nothing)
+FilePath : Set
+FilePath = String
+
+record grepOptions : Set where
+  field
+    -V     : Bool
+    -v     : Bool
+    -i     : Bool
+    regexp : Maybe String
+    files  : List FilePath
+open grepOptions public
+
+module myCharBase where
+
+  {-# IMPORT GHC.Unicode #-}
+
+  postulate
+    toLower : Char → Char
+    toUpper : Char → Char
+  
+  {-# COMPILED toLower GHC.Unicode.toLower #-}
+  {-# COMPILED toUpper GHC.Unicode.toUpper #-}
+
+IgnoreCase : RegExp → RegExp
+IgnoreCase ∅       = ∅
+IgnoreCase ε       = ε
+IgnoreCase ─       = ─
+IgnoreCase [ a ]   = S.[ myCharBase.toUpper a ] ∣ S.[ myCharBase.toLower a ]
+IgnoreCase (e ∣ f) = IgnoreCase e ∣ IgnoreCase f
+IgnoreCase (e ∙ f) = IgnoreCase e ∙ IgnoreCase f
+IgnoreCase (e ⋆)   = IgnoreCase e ⋆
+
+select : grepOptions → RegExp → String → Maybe String
+select opt e str = dec (substring match target) ifYes ifNo
   where
-    grab : Substring e (Str.toList str) → String
+    match : RegExp
+    match = (if -i opt then IgnoreCase else id) e
+
+    target : List Char
+    target = Str.toList str
+
+    grab : Substring match target → String
     grab (ss , ts , us , _ , _) =
         Str.fromList $ ss List.++ Str.toList "\x1B[1m\x1B[31m"
                           List.++ ts
                           List.++ Str.toList "\x1B[0m"
                           List.++ us
+
+    ifYes = if -v opt then const nothing    else (just ∘′ grab)
+    ifNo  = if -v opt then const (just str) else const nothing
 
 open import IO           as IO
 import IO.Primitive      as Prim
@@ -75,34 +120,74 @@ module myPrimIO where
   {-# IMPORT System.Environment #-}
 
   postulate
-    getArgs     : Prim.IO (List String)
+    getArgs : Prim.IO (List String)
 
-  {-# COMPILED getArgs        System.Environment.getArgs               #-}
+  {-# COMPILED getArgs System.Environment.getArgs #-}
 
 getArgs : IO (List String)
 getArgs = lift myPrimIO.getArgs
 
-usage : IO (Lift ⊤)
-usage = ♯ IO.putStrLn "Usage: aGdaREP regexp [filename]" >> ♯ return (lift tt)
+usage : IO ⊤
+usage = IO.putStrLn "Usage: aGdaREP [OPTIONS] regexp [filename]"
 
-FilePath : Set
-FilePath = String
 
-grep : RegExp → List FilePath → IO (Lift ⊤)
-grep reg []        = return $ lift tt
-grep reg (fp ∷ xs) = 
+defaultGrepOptions : grepOptions
+defaultGrepOptions = record { -V = false ; -v = false ; -i = false ; regexp = nothing ; files = [] }
+
+set-v : grepOptions → grepOptions
+set-v opt = record { -V = -V opt ; -v = true ; -i = -i opt ; regexp = regexp opt ; files = files opt }
+
+set-V : grepOptions → grepOptions
+set-V opt = record { -V = true ; -v = -v opt ; -i = -i opt ; regexp = regexp opt ; files = files opt }
+
+set-i : grepOptions → grepOptions
+set-i opt = record { -V = -V opt ; -v = -v opt ; -i = true ; regexp = regexp opt ; files = files opt }
+
+set-regexp : String → grepOptions → grepOptions
+set-regexp str opt = record { -V = -V opt ; -v = -v opt ; -i = -i opt ; regexp = just str ; files = files opt }
+
+set-files : List FilePath → grepOptions → grepOptions
+set-files fps opt = record { -V = -V opt ; -v = -v opt ; -i = -i opt ; regexp = regexp opt ; files = fps }
+
+add-file : FilePath → grepOptions → grepOptions
+add-file fp opt = set-files (fp ∷ files opt) opt
+
+parseOptions : List String → grepOptions
+parseOptions args = set-files (List.reverse $ files result) result
+  where
+    cons : grepOptions → String → grepOptions
+    cons opt "-v" = set-v opt
+    cons opt "-V" = set-V opt
+    cons opt "-i" = set-i opt
+    cons opt str  =
+      if is-nothing (regexp opt)
+      then set-regexp str opt
+      else add-file str opt
+
+    result : grepOptions
+    result = List.foldl cons defaultGrepOptions args
+
+display : FilePath → String → String
+display fp str = "\x1B[35m" Str.++ fp Str.++ "\x1B[36m:\x1B[0m" Str.++ str
+
+grep : grepOptions → RegExp → List FilePath → IO ⊤
+grep opt reg []        = return tt
+grep opt reg (fp ∷ xs) = 
   ♯ IO.readFiniteFile fp >>= λ content →
-  ♯ (♯ (IO.mapM′ (maybe putStrLn (return tt))
+  ♯ (♯ (IO.mapM′ (maybe (putStrLn ∘ display fp) (return tt))
        $ Colist.fromList
-       $ List.map (select reg)
+       $ List.map (select opt reg)
        $ lines content) >>
-       ♯ (grep reg xs))
+       ♯ (grep opt reg xs))
 
 main : _
 main =
   IO.run $
   ♯ getArgs >>= λ args →
-  ♯ (case args of λ
-     { (reg ∷ fp ∷ xs) → [ flip grep (fp ∷ xs) , const $ return (lift tt) ]′ (parseRegExp reg)
-     ; _               → usage
-     })
+    ♯ let options = parseOptions args in
+      if -V options
+      then putStrLn "aGdaREP: version 0.1"
+      else case Maybe.map parseRegExp (regexp options) of λ
+             { nothing         → usage
+             ; (just (inj₂ e)) → putStrLn ("*** Error: invalid regexp (" Str.++ showError e Str.++ ")")
+             ; (just (inj₁ r)) → grep options r (files options) }

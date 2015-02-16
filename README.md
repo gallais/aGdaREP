@@ -1,6 +1,6 @@
 # aGdaREP - Implementing grep in Agda
 
-    Usage: aGdaREP regexp [filename]
+    Usage: aGdaREP [OPTIONS] regexp [filename]
 
 The matching algorithm is more or less the one described in Alexandre Agular
 and Bassel Mannaa's 2009 technical report ([pdf](http://www.cse.chalmers.se/~bassel/regex_agda/report.pdf)).
