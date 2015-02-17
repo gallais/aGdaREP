@@ -11,13 +11,13 @@ open import Data.List     as List    using (List ; [] ; _∷_)
 open import lib.Nullary
 open import Function
 
-module Search
+module RegExp.Search
        (Alphabet : Set)
        (_≟_ : (a b : Alphabet) → Dec (a ≡ b))
        where
 
-  import SmartCons
-  module SC = SmartCons Alphabet _≟_
+  import RegExp.SmartCons
+  module SC = RegExp.SmartCons Alphabet _≟_
   open SC public
 
   ∈∣-invert : {xs : List Alphabet} {e f : RegExp} → xs ∈ e ∣ f → xs ∈ e ⊎ xs ∈ f

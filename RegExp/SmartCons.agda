@@ -10,13 +10,13 @@ open import Data.List     as List    using (List ; [] ; _∷_)
 open import lib.Nullary
 open import Function
 
-module SmartCons
+module RegExp.SmartCons
        (Alphabet : Set)
        (_≟_ : (a b : Alphabet) → Dec (a ≡ b))
        where
 
-  import RegExp
-  module RE = RegExp Alphabet _≟_
+  import RegExp.RegExp
+  module RE = RegExp.RegExp Alphabet _≟_
   open RE public
 
   infixr 5 _`∣_

@@ -10,7 +10,8 @@ open import Data.List     as List    using (List ; [] ; _∷_)
 open import lib.Nullary
 open import Function
 
-module RegExp (Alphabet : Set)
+module RegExp.RegExp
+       (Alphabet : Set)
        (_≟_ : (a b : Alphabet) → Dec (a ≡ b))
        where
 
