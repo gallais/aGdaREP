@@ -32,8 +32,8 @@ module RegExp.Search
   hasEmpty : (e : RegExp) → Dec ([] ∈ e)
   hasEmpty ∅       = no (λ ())
   hasEmpty ε       = yes ε
-  hasEmpty ─       = no (λ ())
   hasEmpty [ a ]   = no (λ ())
+  hasEmpty [^ a ]  = no (λ ())
   hasEmpty (e ∣ f) = dec (hasEmpty e) (yes ∘ flip _∣₁_ f) $ λ ¬∈e →
                      dec (hasEmpty f) (yes ∘ _∣₂_ e)      $ λ ¬∈f →
                      no $ [ ¬∈e , ¬∈f ]′ ∘ ∈∣-invert
@@ -42,12 +42,22 @@ module RegExp.Search
                      yes $ ∈e ∙ ∈f ⇚ refl
   hasEmpty (e ⋆)   = yes $ ε ∣₁ (e ∙ e ⋆) ⋆
 
+  ∈[∷]-invert : ∀ {a b as} (pr : a ∈[ b ∷ as ]) → a ≡ b ⊎ a ∈[ as ]
+  ∈[∷]-invert z      = inj₁ refl
+  ∈[∷]-invert (s pr) = inj₂ pr
+
+  _∈?[_] : (a : Alphabet) (as : List Alphabet) → Dec (a ∈[ as ])
+  a ∈?[ []      ] = no (λ ())
+  a ∈?[ b ∷ as  ] with a ≟ b
+  a ∈?[ .a ∷ as ] | yes refl = yes z
+  ...             | no ¬hd   = dec (a ∈?[ as ]) (yes ∘ s) (λ ¬tl → no ([ ¬hd , ¬tl ]′ ∘ ∈[∷]-invert))
+
   infix 4 _⟪_
   _⟪_ : (e : RegExp) (a : Alphabet) → RegExp
   ∅       ⟪ a = ∅
   ε       ⟪ a = ∅
-  ─       ⟪ a = ε
-  [ b ]   ⟪ a = dec (a ≟ b) (const ε) (const ∅)
+  [ as ]  ⟪ a = dec (a ∈?[ as ]) (const ε) (const ∅)
+  [^ as ] ⟪ a = dec (a ∈?[ as ]) (const ∅) (const ε)
   e₁ ∣ e₂ ⟪ a = (e₁ ⟪ a) `∣ (e₂ ⟪ a)
   e₁ ∙ e₂ ⟪ a = dec (hasEmpty e₁)
                 (const $ ((e₁ ⟪ a) `∙ e₂) `∣ (e₂ ⟪ a))
@@ -56,12 +66,14 @@ module RegExp.Search
 
   ⟪-sound : (x : Alphabet) (xs : List Alphabet) (e : RegExp) →
             xs ∈ e ⟪ x → x ∷ xs ∈ e
-  ⟪-sound x xs ∅ ()
-  ⟪-sound x xs ε ()
-  ⟪-sound x .[] ─ ε = ─
-  ⟪-sound x xs [ a ] pr with x ≟ a
-  ⟪-sound x .[] [ .x ] ε | yes refl = [ x ]
-  ⟪-sound x xs [ a ] () | no ¬p
+  ⟪-sound x ._ ∅ [ () ]
+  ⟪-sound x ._ ε [ () ]
+  ⟪-sound x xs  [ a ∷ as ] pr with x ∈?[ a ∷ as ]
+  ⟪-sound x .[] [ a ∷ as ] ε      | yes i = [ i ]
+  ⟪-sound x ._  [ a ∷ as ] [ () ] | no ¬i
+  ⟪-sound x xs  [^ as ] pr with x ∈?[ as ]
+  ⟪-sound x ._  [^ as ] [ () ] | yes i
+  ⟪-sound x .[] [^ as ] ε      | no ¬i = [^ ¬i ]
   ⟪-sound x xs (e ∣ f) pr with `∣-sound (e ⟪ x) (f ⟪ x) pr
   ... | pr′ ∣₁ .(f ⟪ x) = ⟪-sound x xs e pr′ ∣₁ f
   ... | .(e ⟪ x) ∣₂ pr′ = e ∣₂ ⟪-sound x xs f pr′
@@ -77,10 +89,13 @@ module RegExp.Search
 
   ⟪-complete : (x : Alphabet) (xs : List Alphabet) (e : RegExp) →
                x ∷ xs ∈ e → xs ∈ e ⟪ x
-  ⟪-complete x .[] .─ ─ = ε
-  ⟪-complete x .[] .([ x ]) [ .x ] with x ≟ x
-  ⟪-complete x .[] .([ x ]) [ .x ] | yes p = ε
-  ⟪-complete x .[] .([ x ]) [ .x ] | no ¬p = ⊥-elim (¬p refl)
+  ⟪-complete x .[] ∅ [ () ]
+  ⟪-complete x .[] [ a ∷ as ] [ i ] with x ∈?[ a ∷ as ]
+  ⟪-complete x .[] [ a ∷ as ] [ i ] | yes p = ε
+  ⟪-complete x .[] [ a ∷ as ] [ i ] | no ¬p = ⊥-elim $ ¬p i
+  ⟪-complete x .[] [^ as ] [^ ¬i ] with x ∈?[ as ]
+  ⟪-complete x .[] [^ as ] [^ ¬i ] | yes p = ⊥-elim $ ¬i p
+  ⟪-complete x .[] [^ as ] [^ ¬i ] | no ¬p = ε
   ⟪-complete x xs (e ∣ f) (pr ∣₁ .f) = `∣-complete (e ⟪ x) (f ⟪ x) (⟪-complete x xs e pr ∣₁ (f ⟪ x))
   ⟪-complete x xs (e ∣ f) (.e ∣₂ pr) = `∣-complete (e ⟪ x) (f ⟪ x) ((e ⟪ x) ∣₂ ⟪-complete x xs f pr)
   ⟪-complete x xs (e ∙ f) (pr ∙ pr₁ ⇚ x₁) with hasEmpty e
@@ -107,7 +122,7 @@ module RegExp.Search
 
   prefix : (e : RegExp) (xs : List Alphabet) → Dec (Prefix e xs)
   prefix e []       = dec (hasEmpty e) (λ []∈e → yes $ [] , [] , refl , []∈e) (no ∘ ¬Prefix[])
-  prefix ∅ _        = no (λ { (_ , _ , _ , ()) })
+  prefix ∅ _        = no (λ { (_ , _ , _ , pr) → ∈∅-invert pr })
   prefix e (x ∷ xs) = dec (hasEmpty e) (λ []∈e → yes $ [] , x ∷ xs , refl , []∈e) $ λ ¬[]∈e →
                       dec (prefix (e ⟪ x) xs)
                       (λ { (ys , zs , eq , pr) → yes $ x ∷ ys , zs , cong (_∷_ x) eq , ⟪-sound x ys e pr })

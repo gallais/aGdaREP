@@ -25,8 +25,8 @@ open S
 ignoreCase : RegExp → RegExp
 ignoreCase ∅       = ∅
 ignoreCase ε       = ε
-ignoreCase ─       = ─
-ignoreCase [ a ]   = S.[ toUpper a ] ∣ S.[ toLower a ]
+ignoreCase [ a ]   = S.[ List.map toUpper a List.++ List.map toLower a ]
+ignoreCase [^ a ]  = S.[^ List.map toUpper a List.++ List.map toLower a ]
 ignoreCase (e ∣ f) = ignoreCase e ∣ ignoreCase f
 ignoreCase (e ∙ f) = ignoreCase e ∙ ignoreCase f
 ignoreCase (e ⋆)   = ignoreCase e ⋆
