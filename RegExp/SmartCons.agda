@@ -12,11 +12,12 @@ open import Function
 
 module RegExp.SmartCons
        (Alphabet : Set)
+       (_≤_ : (a b : Alphabet) → Set)
        (_≟_ : (a b : Alphabet) → Dec (a ≡ b))
        where
 
   import RegExp.RegExp
-  module RE = RegExp.RegExp Alphabet
+  module RE = RegExp.RegExp Alphabet _≤_
   open RE public
 
   infixr 5 _`∣_

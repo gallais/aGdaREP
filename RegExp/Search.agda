@@ -13,11 +13,13 @@ open import Function
 
 module RegExp.Search
        (Alphabet : Set)
-       (_≟_ : (a b : Alphabet) → Dec (a ≡ b))
+       (_≤_  : (a b : Alphabet) → Set)
+       (_≟_  : (a b : Alphabet) → Dec (a ≡ b))
+       (_≤?_ : (a b : Alphabet) → Dec (a ≤ b))
        where
 
   import RegExp.SmartCons
-  module SC = RegExp.SmartCons Alphabet _≟_
+  module SC = RegExp.SmartCons Alphabet _≤_ _≟_
   open SC public
 
   ∈∣-invert : {xs : List Alphabet} {e f : RegExp} → xs ∈ e ∣ f → xs ∈ e ⊎ xs ∈ f
@@ -42,15 +44,23 @@ module RegExp.Search
                      yes $ ∈e ∙ ∈f ⇚ refl
   hasEmpty (e ⋆)   = yes $ (ε ∣₁ (e ∙ e ⋆)) ⋆
 
-  ∈[∷]-invert : ∀ {a b as} (pr : a ∈[ b ∷ as ]) → a ≡ b ⊎ a ∈[ as ]
-  ∈[∷]-invert z      = inj₁ refl
-  ∈[∷]-invert (s pr) = inj₂ pr
+  ∈[exact∷]-invert : ∀ {a b as} (pr : a ∈[ exact b ∷ as ]) → a ≡ b ⊎ a ∈[ as ]
+  ∈[exact∷]-invert z≡     = inj₁ refl
+  ∈[exact∷]-invert (s pr) = inj₂ pr
 
-  _∈?[_] : (a : Alphabet) (as : List Alphabet) → Dec (a ∈[ as ])
-  a ∈?[ []      ] = no (λ ())
-  a ∈?[ b ∷ as  ] with a ≟ b
-  a ∈?[ .a ∷ as ] | yes refl = yes z
-  ...             | no ¬hd   = dec (a ∈?[ as ]) (yes ∘ s) (λ ¬tl → no ([ ¬hd , ¬tl ]′ ∘ ∈[∷]-invert))
+  ∈[range∷]-invert : ∀ {a b c as} (pr : a ∈[ range b c ∷ as ]) → ((b ≤ a) × (a ≤ c)) ⊎ a ∈[ as ]
+  ∈[range∷]-invert (z≥≤ pr₁ pr₂) = inj₁ (pr₁ , pr₂)
+  ∈[range∷]-invert (s pr)        = inj₂ pr
+
+  _∈?[_] : (a : Alphabet) (as : List Range) → Dec (a ∈[ as ])
+  a ∈?[ []               ] = no (λ ())
+  a ∈?[ exact b     ∷ as ] with a ≟ b
+  ... | yes hd rewrite hd = yes z≡
+  ... | no ¬hd            = dec (a ∈?[ as ]) (yes ∘ s) (λ ¬tl → no ([ ¬hd , ¬tl ]′ ∘ ∈[exact∷]-invert))
+  a ∈?[ range lb ub ∷ as ] with lb ≤? a | a ≤? ub
+  ... | yes pr₁ | yes pr₂ = yes $ z≥≤ pr₁ pr₂
+  ... | no ¬pr₁ | _       = dec (a ∈?[ as ]) (yes ∘ s) (λ ¬tl → no ([ ¬pr₁ ∘ proj₁ , ¬tl ]′ ∘ ∈[range∷]-invert))
+  ... | _       | no ¬pr₂ = dec (a ∈?[ as ]) (yes ∘ s) (λ ¬tl → no ([ ¬pr₂ ∘ proj₂ , ¬tl ]′ ∘ ∈[range∷]-invert))
 
   infix 4 _⟪_
   _⟪_ : (e : RegExp) (a : Alphabet) → RegExp

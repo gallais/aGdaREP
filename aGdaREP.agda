@@ -22,11 +22,18 @@ open import RegExp.Parse
 open import aGdaREP.Options
 open S
 
+ignoreCaseRanges : List Range → List Range
+ignoreCaseRanges = List.foldr (List._++_ ∘ ignoreCase) []
+  where
+    ignoreCase : Range → List Range
+    ignoreCase (exact a)     = exact (toLower a) ∷ exact (toUpper a) ∷ []
+    ignoreCase (range lb ub) = range (toLower lb) (toLower ub) ∷ range (toUpper lb) (toUpper ub) ∷ []
+
 ignoreCase : RegExp → RegExp
 ignoreCase ∅       = ∅
 ignoreCase ε       = ε
-ignoreCase [ a ]   = S.[ List.map toUpper a List.++ List.map toLower a ]
-ignoreCase [^ a ]  = S.[^ List.map toUpper a List.++ List.map toLower a ]
+ignoreCase [ a ]   = S.[  ignoreCaseRanges a ]
+ignoreCase [^ a ]  = S.[^ ignoreCaseRanges a ]
 ignoreCase (e ∣ f) = ignoreCase e ∣ ignoreCase f
 ignoreCase (e ∙ f) = ignoreCase e ∙ ignoreCase f
 ignoreCase (e ⋆)   = ignoreCase e ⋆
