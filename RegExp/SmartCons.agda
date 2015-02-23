@@ -144,10 +144,10 @@ module RegExp.SmartCons
 
   `⋆-complete : (e : RegExp) {xs : List Alphabet} →
                 xs ∈ e ⋆ → xs ∈ e `⋆
-  `⋆-complete ∅ (pr ∣₁ ._ ⋆) = pr
-  `⋆-complete ∅ (._ ∣₂ ([ () ] ∙ _ ⇚ _) ⋆)
-  `⋆-complete ε (.ε ∣₂ (ε ∙ pr ⇚ refl) ⋆) = `⋆-complete ε pr
-  `⋆-complete ε (pr ∣₁ ._ ⋆) = pr
+  `⋆-complete ∅ ((pr ∣₁ ._) ⋆) = pr
+  `⋆-complete ∅ ((._ ∣₂ ([ () ] ∙ _ ⇚ _)) ⋆)
+  `⋆-complete ε ((.ε ∣₂ (ε ∙ pr ⇚ refl)) ⋆) = `⋆-complete ε pr
+  `⋆-complete ε ((pr ∣₁ ._) ⋆) = pr
   `⋆-complete [ a ∷ as ] pr = pr
   `⋆-complete [^ a ] pr = pr
   `⋆-complete (e ∣ e₁) pr = pr
@@ -235,7 +235,7 @@ module RegExp.SmartCons
   `∙-sound (e₁ ∙ e₂) (e₃ ∣ e₄) pr = pr
   `∙-sound (e₁ ∙ e₂) (e₃ ∙ e₄) pr = pr
   `∙-sound (e₁ ∙ e₂) (e₃ ⋆) pr = pr
-  `∙-sound (e₁ ⋆) ∅ pr = (ε ∣₁ _ ⋆) ∙ pr ⇚ refl
+  `∙-sound (e₁ ⋆) ∅ pr = ((ε ∣₁ _) ⋆) ∙ pr ⇚ refl
   `∙-sound (e₁ ⋆) ε pr = pr ∙ ε ⇚ (sym $ proj₂ LM.identity _)
   `∙-sound (e₁ ⋆) [ a ∷ as ] pr = pr
   `∙-sound (e₁ ⋆) [^ a ] pr = pr
@@ -245,8 +245,8 @@ module RegExp.SmartCons
 
   `⋆-sound : (e : RegExp) {xs : List Alphabet} →
              xs ∈ e `⋆ → xs ∈ e ⋆
-  `⋆-sound ∅ pr = pr ∣₁ _ ⋆
-  `⋆-sound ε pr = pr ∣₁ _ ⋆
+  `⋆-sound ∅ pr = (pr ∣₁ _) ⋆
+  `⋆-sound ε pr = (pr ∣₁ _) ⋆
   `⋆-sound [ a ∷ as ] pr = pr
   `⋆-sound [^ a ] pr = pr
   `⋆-sound (e ∣ e₁) pr = pr

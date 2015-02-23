@@ -40,7 +40,7 @@ module RegExp.Search
   hasEmpty (e ∙ f) = flip (dec (hasEmpty e)) (λ ¬∈e → no $ ¬∈e ∘ proj₁ ∘ []∈∙-invert) $ λ ∈e →
                      flip (dec (hasEmpty f)) (λ ¬∈f → no $ ¬∈f ∘ proj₂ ∘ []∈∙-invert) $ λ ∈f →
                      yes $ ∈e ∙ ∈f ⇚ refl
-  hasEmpty (e ⋆)   = yes $ ε ∣₁ (e ∙ e ⋆) ⋆
+  hasEmpty (e ⋆)   = yes $ (ε ∣₁ (e ∙ e ⋆)) ⋆
 
   ∈[∷]-invert : ∀ {a b as} (pr : a ∈[ b ∷ as ]) → a ≡ b ⊎ a ∈[ as ]
   ∈[∷]-invert z      = inj₁ refl
@@ -103,9 +103,9 @@ module RegExp.Search
   ⟪-complete x ._ (e ∙ f) (_∙_⇚_ {.x ∷ ys} pr₁ pr₂ refl)   | yes p = `∣-complete ((e ⟪ x) `∙ f) (f ⟪ x) (`∙-complete (e ⟪ x) f (⟪-complete x _ e pr₁ ∙ pr₂ ⇚ refl) ∣₁ _)
   ⟪-complete x xs (e ∙ f) (_∙_⇚_ {[]}     {zs} pr₁ pr₂ eq) | no ¬p = ⊥-elim (¬p pr₁)
   ⟪-complete x ._ (e ∙ f) (_∙_⇚_ {.x ∷ ys} pr₁ pr₂ refl)   | no ¬p = `∙-complete (e ⟪ x) f (⟪-complete x _ e pr₁ ∙ pr₂ ⇚ refl)
-  ⟪-complete x xs ._ (() ∣₁ ._ ⋆)
-  ⟪-complete x xs (e ⋆) (.ε ∣₂ _∙_⇚_ {[]} pr₁ pr₂ refl ⋆)      = ⟪-complete x xs (e ⋆) pr₂
-  ⟪-complete x ._ (e ⋆) (.ε ∣₂ _∙_⇚_ {.x ∷ ys} pr₁ pr₂ refl ⋆) = `∙-complete (e ⟪ x) (e `⋆) (⟪-complete x _ _ pr₁ ∙ `⋆-complete e pr₂ ⇚ refl)
+  ⟪-complete x xs ._ ((() ∣₁ ._) ⋆)
+  ⟪-complete x xs (e ⋆) ((.ε ∣₂ _∙_⇚_ {[]} pr₁ pr₂ refl) ⋆)      = ⟪-complete x xs (e ⋆) pr₂
+  ⟪-complete x ._ (e ⋆) ((.ε ∣₂ _∙_⇚_ {.x ∷ ys} pr₁ pr₂ refl) ⋆) = `∙-complete (e ⟪ x) (e `⋆) (⟪-complete x _ _ pr₁ ∙ `⋆-complete e pr₂ ⇚ refl)
 
   Prefix  : (e : RegExp) (xs : List Alphabet) → Set
   Prefix e xs = Σ[ ys ∈ List Alphabet ] Σ[ zs ∈ List Alphabet ]

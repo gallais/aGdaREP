@@ -16,7 +16,7 @@ module RegExp.RegExp
 
   infixr 5 _∣_
   infixr 6 _∙_
-  infix  7 _⋆
+  infixl 7 _⋆
 
   -- inductive definition of regular expressions
   -- on the alphabet Alphabet
@@ -36,6 +36,7 @@ module RegExp.RegExp
   ─ : RegExp
   ─ = [^ List.[] ]
 
+  infixl 7 _+ _⁇
   _+ : (e : RegExp) → RegExp
   e + = e ∙ e ⋆
 
@@ -51,6 +52,8 @@ module RegExp.RegExp
     z : {as : List Alphabet} → a ∈[ a ∷ as ]
     s : {as : List Alphabet} {b : Alphabet} → a ∈[ as ] → a ∈[ b ∷ as ]
 
+  infixr 5 _∣₁_ _∣₂_
+  infixr 6 _∙_⇚_
   infix 3 _∈_
   data _∈_ : (xs : List Alphabet) (e : RegExp) → Set where
     ε     : [] ∈ ε

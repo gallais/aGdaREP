@@ -48,6 +48,7 @@ mutual
   parseRange : (List Char → RegExp) → List (RegExp → RegExp) → List Char → RegExp ⊎ Error
   parseRange _ []       _                = inj₂ TooManyClosingParentheses
   parseRange _ _        []               = inj₂ UnfinishedRange
+  parseRange k (e ∷ es) ('\\' ∷ x ∷ xs)  = parseRange (k ∘ (_∷_ x)) es xs
   parseRange k (e ∷ es) (']' ∷ '?' ∷ xs) = parse ((λ f → e (k List.[] ⁇ `∙ f)) ∷ es) xs
   parseRange k (e ∷ es) (']' ∷ '*' ∷ xs) = parse ((λ f → e (k List.[] ⋆ `∙ f)) ∷ es) xs
   parseRange k (e ∷ es) (']' ∷ '+' ∷ xs) = parse ((λ f → e (k List.[] + `∙ f)) ∷ es) xs
