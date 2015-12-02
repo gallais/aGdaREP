@@ -119,7 +119,7 @@ module RegExp.Search
 
   Prefix  : (e : RegExp) (xs : List Alphabet) → Set
   Prefix e xs = Σ[ ys ∈ List Alphabet ] Σ[ zs ∈ List Alphabet ]
-                xs ≡ ys List.++ zs × ys ∈ e
+                (xs ≡ ys List.++ zs × ys ∈ e)
 
   ¬Prefix[] : {e : RegExp} (¬[]∈e : ¬ ([] ∈ e)) → ¬ Prefix e []
   ¬Prefix[] ¬[]∈e ([]     , zs , eq , pr) = ¬[]∈e pr
@@ -140,7 +140,7 @@ module RegExp.Search
 
   Substring : (e : RegExp) (xs : List Alphabet) → Set
   Substring e xs = Σ[ ss ∈ List Alphabet ] Σ[ ts ∈ List Alphabet ] Σ[ us ∈ List Alphabet ]
-                   xs ≡ ss List.++ ts List.++ us × ts ∈ e
+                   (xs ≡ ss List.++ ts List.++ us × ts ∈ e)
 
   ¬Substring[] : {e : RegExp} (¬here : ¬ Prefix e []) → ¬ (Substring e [])
   ¬Substring[] ¬here ([]     , ts , us , eq , pr) = ¬here (ts , us , eq , pr)
