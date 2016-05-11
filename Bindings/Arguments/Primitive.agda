@@ -9,4 +9,4 @@ open import Data.String
 postulate
   getArgs : IO (List String)
 
-{-# COMPILED getArgs System.Environment.getArgs #-}
+{-# COMPILED getArgs (fmap (fmap Data.Text.pack) System.Environment.getArgs) #-}
