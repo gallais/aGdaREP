@@ -2,7 +2,7 @@
 
 open import Relation.Binary using (Preorder; Setoid)
 
-module Text.Regex.Internal {a e r} (P : Preorder a e r) where
+module Text.Regex.Base {a e r} (P : Preorder a e r) where
 
 open import Level using (_⊔_)
 

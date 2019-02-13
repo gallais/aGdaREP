@@ -2,7 +2,7 @@
 
 open import Relation.Binary using (DecPoset)
 
-module Text.Regex.Internal.Properties {a e r} (P? : DecPoset a e r) where
+module Text.Regex.Properties {a e r} (P? : DecPoset a e r) where
 
 open import Data.List.Base               using (List; []; _∷_)
 open import Data.List.Relation.Unary.All using (all)
@@ -22,7 +22,7 @@ import Relation.Binary as B
 import Relation.Binary.PropositionalEquality as P
 
 open DecPoset P? renaming (Carrier to A)
-open import Text.Regex.Internal preorder
+open import Text.Regex.Base preorder
 
 ------------------------------------------------------------------------
 -- Inversion lemmas
@@ -35,15 +35,15 @@ open import Text.Regex.Internal preorder
 ------------------------------------------------------------------------
 -- Decidability results
 
-ε∈?_ : U.Decidable ([] ∈_)
-ε∈? ε       = yes ε
-ε∈? [ rs ]  = no (λ ())
-ε∈? [^ rs ] = no (λ ())
-ε∈? (e ∣ f) = map′ sum (λ where (sum pr) → pr)
-            $ (ε∈? e) ⊎-dec (ε∈? f)
-ε∈? (e ∙ f) = map′ (uncurry (prod P.refl)) []∈⁻¹[e∙f]
-            $ (ε∈? e) ×-dec (ε∈? f)
-ε∈? (e ⋆)   = yes (star (sum (inj₁ ε)))
+[]∈?_ : U.Decidable ([] ∈_)
+[]∈? ε       = yes ε
+[]∈? [ rs ]  = no (λ ())
+[]∈? [^ rs ] = no (λ ())
+[]∈? (e ∣ f) = map′ sum (λ where (sum pr) → pr)
+             $ ([]∈? e) ⊎-dec ([]∈? f)
+[]∈? (e ∙ f) = map′ (uncurry (prod P.refl)) []∈⁻¹[e∙f]
+             $ ([]∈? e) ×-dec ([]∈? f)
+[]∈? (e ⋆)   = yes (star (sum (inj₁ ε)))
 
 _∈ᴿ?_ : B.Decidable _∈ᴿ_
 c ∈ᴿ? [ a ]     = map′ [_] (λ where [ eq ] → eq)

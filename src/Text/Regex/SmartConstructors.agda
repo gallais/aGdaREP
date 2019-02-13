@@ -1,8 +1,8 @@
 {-# OPTIONS --without-K --safe #-}
 
-open import Relation.Binary using (DecPoset)
+open import Relation.Binary using (Preorder)
 
-module Text.Regex.SmartConstructors {a e r} (P? : DecPoset a e r) where
+module Text.Regex.SmartConstructors {a e r} (P : Preorder a e r) where
 
 open import Data.Empty
 open import Data.List.Base using ([]; _∷_)
@@ -12,8 +12,7 @@ open import Function
 open import Relation.Nullary using (yes; no)
 open import Relation.Binary.PropositionalEquality hiding (preorder)
 
-open DecPoset P? using (preorder) renaming (Carrier to A)
-open import Text.Regex.Internal preorder as R hiding (_∣_; _∙_; _⋆)
+open import Text.Regex.Base P as R hiding (_∣_; _∙_; _⋆)
 
 ------------------------------------------------------------------------
 -- Sum
