@@ -24,6 +24,7 @@ open Preorder P using (_≈_) renaming (Carrier to A; _∼_ to _≤_)
 ------------------------------------------------------------------------
 -- Regular expressions on the alphabet A
 
+infix 10 [_] _─_
 data Range : Set a where
   [_] : (a : A)     → Range
   _─_ : (lb ub : A) → Range
@@ -31,6 +32,7 @@ data Range : Set a where
 infixr 5 _∣_
 infixr 6 _∙_
 infixl 7 _⋆
+infix 10 [^_]
 
 data Exp : Set a where
   ε    : Exp
@@ -44,6 +46,8 @@ data Exp : Set a where
 
 pattern ∅ = [ List.[] ]
 pattern · = [^ List.[] ]
+
+pattern singleton a = [ Range.[ a ] ∷ [] ]
 
 infixl 7 _+ _⁇
 _+ : Exp → Exp

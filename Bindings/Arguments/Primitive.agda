@@ -4,9 +4,10 @@ open import IO.Primitive
 open import Data.List
 open import Data.String
 
-{-# IMPORT System.Environment #-}
+{-# FOREIGN GHC import qualified System.Environment as SE #-}
+{-# FOREIGN GHC import qualified Data.Text          as T  #-}
 
 postulate
   getArgs : IO (List String)
 
-{-# COMPILED getArgs (fmap (fmap Data.Text.pack) System.Environment.getArgs) #-}
+{-# COMPILE GHC getArgs = fmap (fmap T.pack) SE.getArgs) #-}

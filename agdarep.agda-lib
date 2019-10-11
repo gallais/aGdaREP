@@ -1,3 +1,4 @@
 name: agdarep
-include: src
+include: . src
 depend: standard-library
+      , agdarsec
