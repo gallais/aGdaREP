@@ -5,23 +5,21 @@ open import Text.Parser.Monad
 open import Text.Parser.Position
 open import Induction.Nat.Strong
 open import Text.Parser.Combinators
-open import Text.Parser.Combinators.Char
 
 import Data.Nat.Properties as ℕₚ
-open import Data.Bool.Base
 open import Data.Char as Char
 import Data.Char.Properties as Charₚ
 open import Data.Vec as Vec using (Vec)
 open import Data.List.Base as List using (List; []; _∷_)
 import Data.List.NonEmpty as List⁺
 import Data.List.Sized.Interface
-open import Data.Maybe
+open import Data.Maybe using (Maybe; maybe); open Maybe
 open import Data.Product
 import Data.String as String
 open import Function
-open import Relation.Nullary
+open import Relation.Nullary using (yes; no)
 open import Relation.Unary
-open import Relation.Binary as B
+import Relation.Binary as B
 open import Relation.Binary.PropositionalEquality
 open import Relation.Binary.PropositionalEquality.Decidable
 
