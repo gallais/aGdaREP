@@ -5,7 +5,7 @@
 ![screenshot](screenshot.png)
 
 The matching algorithm is more or less the one described in Alexandre Agular
-and Bassel Mannaa's 2009 technical report ([pdf](http://web.student.chalmers.se/~bassel/regex_agda/report.pdf)).
+and Bassel Mannaa's 2009 technical report ([pdf](http://itu.dk/people/basm/report.pdf)).
 I depart from it in two occasions: firstly, I use smart constructors rather
 than having a later pass simplifying the regular expression computed by the
 derivative function `_⟪_`; and secondly I replace the notions of the empty
