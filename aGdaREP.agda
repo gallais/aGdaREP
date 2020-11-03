@@ -1,88 +1,76 @@
 module aGdaREP where
 
 open import Level
-open import Coinduction
-open import Data.Unit
-open import Data.Bool
-open import Data.Product
-open import Data.Sum
-open import Data.Char     as Chr
-open import Data.String   as Str
-open import Data.List     as List
-open import Data.Maybe    as Maybe
+open import Codata.Musical.Notation
+open import Data.Unit.Polymorphic using (⊤)
+open import Data.Bool.Base using (Bool; true; false; if_then_else_)
+open import Data.Char as Char using (Char)
+import Data.Char.Properties as Charₚ
+open import Data.String.Base as String using (String)
+open import Data.List.Base as List using (List; []; _∷_; _++_)
+open import Data.Maybe.Base as Maybe using (Maybe; nothing; just; maybe′)
+open import Data.Product using (_×_; _,_; uncurry)
 
-open import Bindings.Char
 open import Bindings.Arguments
 
 open import Function
 open import Relation.Nullary
+open import Relation.Binary.PropositionalEquality
 open import lib.Nullary
 
-open import RegExp.Parse
+open import Text.Regex.Char
+open import Text.Regex.Parse using (parse)
+open import Text.Regex.Search Charₚ.≤-decPoset-≈
+
+open import Data.List.Relation.Binary.Infix.Heterogeneous using (Infix; MkView; toView)
 open import aGdaREP.Options
-open S
 
-ignoreCaseRanges : List Range → List Range
-ignoreCaseRanges = List.foldr (List._++_ ∘ ignoreCase) []
+select : grepOptions → Exp → String → Maybe String
+select opt e str = dec (Infix.search target regex) ifYes ifNo
   where
-    ignoreCase : Range → List Range
-    ignoreCase (exact a)     = exact (toLower a) ∷ exact (toUpper a) ∷ []
-    ignoreCase (range lb ub) = range (toLower lb) (toLower ub) ∷ range (toUpper lb) (toUpper ub) ∷ []
-
-ignoreCase : RegExp → RegExp
-ignoreCase ∅       = ∅
-ignoreCase ε       = ε
-ignoreCase [ a ]   = S.[  ignoreCaseRanges a ]
-ignoreCase [^ a ]  = S.[^ ignoreCaseRanges a ]
-ignoreCase (e ∣ f) = ignoreCase e ∣ ignoreCase f
-ignoreCase (e ∙ f) = ignoreCase e ∙ ignoreCase f
-ignoreCase (e ⋆)   = ignoreCase e ⋆
-
-select : grepOptions → RegExp → String → Maybe String
-select opt e str = dec (substring match target) ifYes ifNo
-  where
-    match : RegExp
-    match = (if -i opt then ignoreCase else id) e
+    regex : Exp
+    regex = (if -i opt then ignoreCase else id) e
 
     target : List Char
-    target = Str.toList str
+    target = String.toList str
 
-    grab : Substring match target → String
-    grab (ss , ts , us , _ , _) =
-        Str.fromList $ ss List.++ Str.toList "\x1B[1m\x1B[31m"
-                          List.++ ts
-                          List.++ Str.toList "\x1B[0m"
-                          List.++ us
+    grab : ∀ {cs} → Match (Infix _≡_) cs regex → String
+    grab (MkMatch inf _ prf) with toView prf
+    ... | MkView pref _ suff = String.fromList
+         $ pref ++ String.toList "\x1B[1m\x1B[31m"
+        ++ inf  ++ String.toList "\x1B[0m"
+        ++ suff
 
     ifYes = if -v opt then const nothing    else (just ∘′ grab)
     ifNo  = if -v opt then const (just str) else const nothing
 
-open import IO           as IO
-open import Data.Colist  as Colist
+
+open import IO                    as IO
+open import Codata.Musical.Colist as Colist
 
 breakOn : {A : Set} (P? : A → Bool) (xs : List A) → List (List A)
-breakOn {A} P? = uncurry _∷_ ∘ foldr step ([] , [])
+breakOn {A} P? = uncurry _∷_ ∘ List.foldr step ([] , [])
   where
     step : A → (List A × List (List A)) → (List A × List (List A))
     step a (xs , xss) = if (P? a) then [] , xs ∷ xss else a ∷ xs , xss
 
 lines : String → List String
-lines = List.map Str.fromList ∘ breakOn isNewLine ∘ Str.toList
+lines = List.map String.fromList ∘ breakOn isNewLine ∘ String.toList
   where
     isNewLine : Char → Bool
-    isNewLine y = dec (y Chr.≟ '\n') (const true) (const false)
+    isNewLine y = dec (y Char.≟ '\n') (const true) (const false)
 
 usage : IO ⊤
 usage = IO.putStrLn "Usage: aGdaREP [OPTIONS] regexp [filename]"
 
 display : FilePath → String → String
-display fp str = "\x1B[35m" Str.++ fp Str.++ "\x1B[36m:\x1B[0m" Str.++ str
+display fp str = String.concat ("\x1B[35m" ∷ fp ∷ "\x1B[36m:\x1B[0m" ∷ str ∷ [])
 
-grep : grepOptions → RegExp → List FilePath → IO ⊤
-grep opt reg []        = return tt
-grep opt reg (fp ∷ xs) = 
+grep : grepOptions → Exp → List FilePath → IO ⊤
+grep opt reg []        = return _
+grep opt reg (fp ∷ xs) =
   ♯ IO.readFiniteFile fp >>= λ content →
-  ♯ (♯ (IO.mapM′ (maybe (putStrLn ∘ display fp) (return tt))
+  ♯ (♯ (IO.mapM′ (maybe′ (putStrLn ∘ display fp) (return _))
        $ Colist.fromList
        $ List.map (select opt reg)
        $ lines content) >>
@@ -95,7 +83,8 @@ main =
     ♯ let options = parseOptions args in
       if -V options
       then putStrLn "aGdaREP: version 0.1"
-      else case Maybe.map parseRegExp (regexp options) of λ
-             { nothing         → usage
-             ; (just (inj₂ e)) → putStrLn ("*** Error: invalid regexp (" Str.++ showError e Str.++ ")")
-             ; (just (inj₁ r)) → grep options r (files options) }
+      else case regexp options of λ where
+             nothing  → usage
+             (just e) → case parse e of λ where
+                nothing      → putStrLn ("*** Error: invalid regexp")
+                (just regex) → grep options regex (files options)

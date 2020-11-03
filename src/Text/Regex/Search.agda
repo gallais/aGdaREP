@@ -25,17 +25,17 @@ _∈?_ : Decidable _∈_
 x ∷ xs ∈? e = map′ (eat-sound x e) (eat-complete x e)
             $ xs ∈? eat x e
 
-infix 1 _,_,_
 record Match {s} (R : Rel (List A) s) (xs : List A) (exp : Exp)
        : Set (a ⊔ e ⊔ r ⊔ s) where
-  constructor _,_,_
+  constructor MkMatch
   field list    : List A
         match   : list ∈ exp
         related : R list xs
+open Match public
 
 map : ∀ {r s} {R : Rel (List A) r} {S : Rel (List A) s} {xs ys e} →
       (∀ {a} → R a xs → S a ys) → Match R xs e → Match S ys e
-map f (ys , ys∈e , pys) = ys , ys∈e , f pys
+map f (MkMatch ys ys∈e pys) = MkMatch ys ys∈e (f pys)
 
 module Prefix where
 
@@ -43,18 +43,18 @@ module Prefix where
   open import Data.List.Relation.Binary.Prefix.Heterogeneous.Properties
 
   []ᴹ : ∀ {xs e} → [] ∈ e → Match (Prefix _≡_) xs e
-  []ᴹ p = [] , p , []
+  []ᴹ p = MkMatch [] p []
 
   []⁻¹ᴹ : ∀ {e} → Match (Prefix _≡_) [] e → [] ∈ e
-  []⁻¹ᴹ (.[] , p , []) = p
+  []⁻¹ᴹ (MkMatch .[] p []) = p
 
   _∷ᴹ_ : ∀ {xs e} x → Match (Prefix _≡_) xs (eat x e) → Match (Prefix _≡_) (x ∷ xs) e
-  x ∷ᴹ (ys , ys∈e\x , ys≤xs) = x ∷ ys , eat-sound x _ ys∈e\x , refl ∷ ys≤xs
+  x ∷ᴹ (MkMatch ys ys∈e\x ys≤xs) = MkMatch (x ∷ ys) (eat-sound x _ ys∈e\x) (refl ∷ ys≤xs)
 
   _∷⁻¹ᴹ_ : ∀ {xs x e} → ¬ ([] ∈ e) →
            Match (Prefix _≡_) (x ∷ xs) e → Match (Prefix _≡_) xs (eat x e)
-  []∉e ∷⁻¹ᴹ (.[]     , []∈e , [])           = ⊥-elim ([]∉e []∈e)
-  []∉e ∷⁻¹ᴹ (._ ∷ ys , ys∈e , refl ∷ ys≤xs) = ys , eat-complete _ _ ys∈e , ys≤xs
+  []∉e ∷⁻¹ᴹ (MkMatch .[]       []∈e [])             = ⊥-elim ([]∉e []∈e)
+  []∉e ∷⁻¹ᴹ (MkMatch (._ ∷ ys) ys∈e (refl ∷ ys≤xs)) = MkMatch ys (eat-complete _ _ ys∈e) ys≤xs
 
   shortest : Decidable (Match (Prefix _≡_))
   shortest xs e with []∈? e
@@ -83,5 +83,5 @@ module Infix where
   search (x ∷ xs) e | no ¬p with search xs e
   ... | yes q = yes (map there q)
   ... | no ¬q = no λ where
-    (ys , ys∈e , here p)  → ¬p (ys , ys∈e , p)
-    (ys , ys∈e , there q) → ¬q (ys , ys∈e , q)
+    (MkMatch ys ys∈e (here p))  → ¬p (MkMatch ys ys∈e p)
+    (MkMatch ys ys∈e (there q)) → ¬q (MkMatch ys ys∈e q)

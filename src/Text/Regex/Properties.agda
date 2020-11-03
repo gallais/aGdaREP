@@ -5,8 +5,8 @@ open import Relation.Binary using (DecPoset)
 module Text.Regex.Properties {a e r} (P? : DecPoset a e r) where
 
 open import Data.List.Base               using (List; []; _∷_)
-open import Data.List.Relation.Unary.All using (all)
-open import Data.List.Relation.Unary.Any using (any)
+open import Data.List.Relation.Unary.All using (all?)
+open import Data.List.Relation.Unary.Any using (any?)
 open import Data.Product                 using (_×_; _,_; uncurry)
 open import Data.Sum.Base                using (_⊎_; inj₁; inj₂)
 open import Function
@@ -59,10 +59,10 @@ _∈?[_] : ∀ w rs → Dec (w ∈ [ rs ])
 []          ∈?[ rs ] = no (λ ())
 (a ∷ b ∷ _) ∈?[ rs ] = no (λ ())
 (a ∷ [])    ∈?[ rs ] = map′ [_] (λ where [ p ] → p)
-                      $ any (a ∈ᴿ?_) rs
+                      $ any? (a ∈ᴿ?_) rs
 
 _∈?[^_] : ∀ w rs → Dec (w ∈ [^ rs ])
 []          ∈?[^ rs ] = no (λ ())
 (a ∷ [])    ∈?[^ rs ] = map′ [^_] (λ where [^ p ] → p)
-                      $ all (¬? ∘ (a ∈ᴿ?_)) rs
+                      $ all? (¬? ∘ (a ∈ᴿ?_)) rs
 (a ∷ b ∷ _) ∈?[^ rs ] = no (λ ())
