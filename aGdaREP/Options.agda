@@ -9,34 +9,48 @@ open import Function
 FilePath : Set
 FilePath = String
 
-record grepOptions : Set where
+record Options : Set where
   field
     -V     : Bool
+    -h     : Bool
     -v     : Bool
     -i     : Bool
     regexp : Maybe String
     files  : List FilePath
-open grepOptions public
+open Options public
 
-defaultGrepOptions : grepOptions
-defaultGrepOptions =
+defaultOptions : Options
+defaultOptions =
   record { -V     = false
+         ; -h     = false
          ; -v     = false
          ; -i     = false
          ; regexp = nothing
          ; files  = [] }
 
-parseOptions : List String → grepOptions
-parseOptions args = record result { files = reverse $ files result }
+parse : List String → Options
+parse args = record result { files = reverse $ files result }
   where
-    cons : grepOptions → String → grepOptions
-    cons opt "-v" = record opt { -v = true }
+    cons : Options → String → Options
     cons opt "-V" = record opt { -V = true }
+    cons opt "-h" = record opt { -h = true }
+    cons opt "-v" = record opt { -v = true }
     cons opt "-i" = record opt { -i = true }
     cons opt str  =
       if is-nothing (regexp opt)
       then record opt { regexp = just str }
       else record opt { files  = str ∷ files opt }
 
-    result : grepOptions
-    result = foldl cons defaultGrepOptions args
+    result : Options
+    result = foldl cons defaultOptions args
+
+usage : String
+usage = unlines
+ $ "Usage: aGdaREP [OPTIONS] PATTERN [FILENAME]"
+ ∷ ""
+ ∷ "OPTIONS:"
+ ∷ "  -h  Print this help"
+ ∷ "  -V  Version"
+ ∷ "  -v  Invert the match"
+ ∷ "  -i  Ignore case"
+ ∷ []
