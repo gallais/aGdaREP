@@ -4,6 +4,20 @@
 
 ![screenshot](screenshot.png)
 
+
+Requirements
+------------
+
+This project should compile using:
+
+* Agda version 2.6.1
+* The standard library (dev version)
+* [Agdarsec](https://github.com/gallais/agdarsec) (dev version)
+
+
+Implementation details
+----------------------
+
 The matching algorithm is more or less the one described in Alexandre Agular
 and Bassel Mannaa's 2009 technical report ([pdf](http://itu.dk/people/basm/report.pdf)).
 I depart from it in two occasions: firstly, I use smart constructors rather

@@ -1,7 +1,8 @@
+AGDA_EXEC ?= agda
 COMPILEDIR=__compile
 
 all:
-	agda -i . -c --compile-dir=${COMPILEDIR} aGdaREP.agda
+	${AGDA_EXEC} -i . -c --compile-dir=${COMPILEDIR} aGdaREP.agda
 
 clean:
 	rm -rf ${COMPILEDIR}

@@ -74,7 +74,7 @@ module Prefix where
 
 module Infix where
 
-  open import Data.List.Relation.Binary.Infix.Heterogeneous
+  open import Data.List.Relation.Binary.Infix.Heterogeneous hiding (map)
 
   search : Decidable (Match (Infix _≡_))
   search xs e with Prefix.shortest xs e

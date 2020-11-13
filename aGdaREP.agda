@@ -10,7 +10,7 @@ open import Data.List.Base as List using (List; []; _∷_; _++_)
 open import Data.Maybe.Base as Maybe using (Maybe; nothing; just; maybe′)
 open import Data.Product using (_×_; _,_; uncurry)
 
-open import Bindings.Arguments
+open import System.Environment using (getArgs)
 
 open import Function
 open import Relation.Nullary
