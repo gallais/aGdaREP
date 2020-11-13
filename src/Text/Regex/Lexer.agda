@@ -143,5 +143,5 @@ inRange (c ∷ cs)         = CHAR c ∷ inRange cs
 ------------------------------------------------------------------------
 -- Entrypoint for the lexer: outside of a range
 
-lex : String → List TOK
-lex = outRange ∘′ toList
+lex : List Char → List TOK
+lex = outRange

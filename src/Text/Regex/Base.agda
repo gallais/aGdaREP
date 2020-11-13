@@ -6,6 +6,7 @@ module Text.Regex.Base {a e r} (P : Preorder a e r) where
 
 open import Level using (_⊔_)
 
+open import Data.Bool.Base using (Bool)
 open import Data.Empty
 open import Data.List.Base as L using (List; []; _∷_; _++_)
 open import Data.List.Properties
@@ -42,6 +43,19 @@ data Exp : Set a where
   _∙_  : (e f : Exp) → Exp
   _⋆   : (e : Exp) → Exp
 
+-- A regular expression has additional parameters:
+-- * should the match begin at the very start of the input?
+-- * should it span until the very end?
+
+record Regex : Set a where
+  field fromStart  : Bool
+        tillEnd    : Bool
+        expression : Exp
+
+updateExp : (Exp → Exp) → Regex → Regex
+updateExp f r = record r { expression = f (Regex.expression r) }
+
+------------------------------------------------------------------------
 -- Derived notions: nothing, anything, at least one and maybe one
 
 pattern ∅ = [ List.[] ]

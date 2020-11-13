@@ -22,17 +22,20 @@ open import Text.Regex.Char
 open import Data.List.Relation.Binary.Infix.Heterogeneous using (Infix; MkView; toView)
 open import aGdaREP.Options
 
-select : grepOptions → Exp → String → Maybe String
-select opt e str = dec (Infix.search target regex) ifYes ifNo
+select : grepOptions → Regex → String → Maybe String
+select opt e str = dec (search target regex) ifYes ifNo
   where
-    regex : Exp
-    regex = (if -i opt then ignoreCase else id) e
+    regex : Regex
+    regex = (if -i opt then updateExp ignoreCase else id) e
+
+    exp : Exp
+    exp = Regex.expression regex
 
     target : List Char
     target = String.toList str
 
-    grab : ∀ {cs} → Match (Infix _≡_) cs regex → String
-    grab (MkMatch inf _ prf) with toView prf
+    grab : ∀ {cs} → Match (Span regex _≡_) cs exp  → String
+    grab (MkMatch inf _ prf) with toView (toInfix regex prf)
     ... | MkView pref _ suff = String.fromList
          $ pref ++ String.toList "\x1B[1m\x1B[31m"
         ++ inf  ++ String.toList "\x1B[0m"
@@ -63,7 +66,7 @@ usage = IO.putStrLn "Usage: aGdaREP [OPTIONS] regexp [filename]"
 display : FilePath → String → String
 display fp str = String.concat ("\x1B[35m" ∷ fp ∷ "\x1B[36m:\x1B[0m" ∷ str ∷ [])
 
-grep : grepOptions → Exp → List FilePath → IO ⊤
+grep : grepOptions → Regex → List FilePath → IO ⊤
 grep opt reg []        = return _
 grep opt reg (fp ∷ xs) =
   ♯ IO.readFiniteFile fp >>= λ content →

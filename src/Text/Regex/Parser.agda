@@ -14,25 +14,27 @@ module Text.Regex.Parser
        (p : ∀[ Parser P (embed Carrier) ])
        where
 
-open import Data.List.Base using ([])
+open import Data.Bool.Base using (Bool; true; false)
+open import Data.Char.Base using (Char)
+open import Data.List.Base as List using (List; [])
 import Data.List.NonEmpty as List⁺
 import Data.List.Sized.Interface
-open import Data.Maybe.Base using (Maybe; nothing; just; maybe′)
+open import Data.Maybe.Base as Maybe using (Maybe; nothing; just; maybe′; _>>=_)
 import Data.Nat.Properties as ℕₚ
-open import Data.Product using (_,_; proj₁; uncurry)
-open import Data.String.Base using (String)
+open import Data.Product using (_×_; _,_; _,′_; proj₁; uncurry)
+open import Data.String.Base as String using (String)
 import Data.Vec.Base as Vec
-open import Function.Base using (_$_; const; id; case_of_)
+open import Function.Base using (_$_; const; id; case_of_; _∋_)
 
 open import Induction.Nat.Strong
-open import Text.Parser.Combinators
+open import Text.Parser.Combinators hiding (_>>=_)
 open import Text.Parser.Monad.Result as Result using (Value)
 open import Text.Parser.Position using (start)
 
 open import Relation.Binary.PropositionalEquality.Decidable
 
 open import Text.Regex.Base PO
-  using (Range; Exp; singleton); open Range; open Exp
+  using (Range; Exp; Regex; singleton); open Range; open Exp
 
 instance
 
@@ -49,8 +51,8 @@ ranges =
               <$> (p <&?> box (exact DOTS &> box p))
   in List⁺.toList <$> list⁺ range
 
-regex : ∀[ Parser P (embed Exp) ]
-regex = fix (Parser P (embed Exp)) $ λ rec →
+exp : ∀[ Parser P (embed Exp) ]
+exp = fix (Parser P (embed Exp)) $ λ rec →
   let parens   = between (exact LPAR) (box (exact RPAR))
       parens?  = between? (exact LPAR) (box (exact RPAR))
       ranges   : Parser P (embed Exp) _
@@ -67,12 +69,26 @@ regex = fix (Parser P (embed Exp)) $ λ rec →
       disj     = chainr1 conj (box (_∣_ <$ exact OR))
   in List⁺.foldr _∙_ id <$> list⁺ (parens? disj)
 
-parse : String → Maybe Exp
-parse str =
-  let toks   = lex str
-      input  = Vec.fromList toks
-      init   = Level≤.lift (start , [])
-      result = runParser regex ℕₚ.≤-refl (Level≤.lift input) init
-   in case Result.map proj₁ result of λ where
-         (Value s) → just $ Level≤.lower $ Success.value s
-         _ → nothing
+parse : String → Maybe Regex
+parse str = do
+  let chars = String.toList str
+  (fromStart , chars) ← do
+    (c , cs) ← List.uncons chars
+    just $ case c of λ where
+      '^' → (true ,′ cs)
+      _   → (false ,′ chars)
+  (tillEnd , chars) ← do
+    (cs , c) ← List.unsnoc chars
+    just $ case c of λ where
+      '$' → (true ,′ cs)
+      _ → (false ,′ chars)
+  let toks   = lex chars
+  let input  = Vec.fromList toks
+  let init   = Level≤.lift (start , [])
+  let result = runParser exp ℕₚ.≤-refl (Level≤.lift input) init
+  case Result.map proj₁ result of λ where
+    (Value s) → just $ record { fromStart  = fromStart
+                              ; tillEnd    = tillEnd
+                              ; expression = Level≤.lower $ Success.value s
+                              }
+    _ → nothing

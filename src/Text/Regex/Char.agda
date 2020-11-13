@@ -64,7 +64,7 @@ ignoreCase (e ⋆)   = ignoreCase e ⋆
 open import Data.Maybe using (from-just)
 open import Relation.Binary.PropositionalEquality
 
-_ : from-just (parse "[a-zA-Z0-9-]*\\.agd(a|ai)")
+_ : Regex.expression (from-just (parse "[a-zA-Z0-9-]*\\.agd(a|ai)"))
     ≡ [ ('a' ─ 'z') ∷ ('A' ─ 'Z') ∷ ('0' ─ '9') ∷ [ '-' ] ∷ [] ] ⋆
     ∙ [ [ '.' ] ∷ [] ]
     ∙ [ [ 'a' ] ∷ [] ]
