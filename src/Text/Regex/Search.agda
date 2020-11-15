@@ -106,10 +106,6 @@ module Prefix where
 
 module Infix where
 
-  []ᴹ : ∀ {e acc xs} → [] ∈ e ⊎ [] ∈ acc → Match (Infix _≡_) xs e ⊎ Match (Prefix _≡_) xs acc
-  []ᴹ (inj₁ p) = inj₁ (MkMatch [] p (here []))
-  []ᴹ (inj₂ p) = inj₂ (MkMatch [] p [])
-
   []⁻¹ᴹ : ∀ {e acc} → Match (Infix _≡_) [] e ⊎ Match (Prefix _≡_) [] acc → [] ∈ e ⊎ [] ∈ acc
   []⁻¹ᴹ (inj₁ (MkMatch .[] []∈e (here []))) = inj₁ []∈e
   []⁻¹ᴹ (inj₂ (MkMatch .[] []∈acc []))      = inj₂ []∈acc
@@ -138,16 +134,17 @@ module Infix where
 
   -- search non-deterministically: at each step, the `acc` regex is changed
   -- to accomodate the fact the match may be starting just now
-  searchND : ∀ xs e acc → Dec (Match (Infix _≡_) xs e ⊎ Match (Prefix _≡_) xs acc)
-  searchND xs e acc with []∈? e | []∈? acc
-  ... | yes p | _     = yes ([]ᴹ (inj₁ p))
-  ... | _     | yes q = yes ([]ᴹ (inj₂ q))
-  searchND [] e acc | no ¬p | no ¬q = no ([ ¬p , ¬q ]′ ∘′ []⁻¹ᴹ)
-  searchND (x ∷ xs) e acc | no ¬p | no ¬q
-    = map′ (step x) (step⁻¹ x ¬p ¬q) (searchND xs e (eat x (e ∣ acc)))
+  searchND : ∀ xs e acc → ¬ ([] ∈ e) → Dec (Match (Infix _≡_) xs e ⊎ Match (Prefix _≡_) xs acc)
+  searchND xs e acc ¬[]∈e with []∈? acc
+  ... | yes []∈acc = yes (inj₂ (MkMatch [] []∈acc []))
+  searchND [] e acc ¬[]∈e | no ¬[]∈acc = no ([ ¬[]∈e , ¬[]∈acc ]′ ∘′ []⁻¹ᴹ)
+  searchND (x ∷ xs) e acc ¬[]∈e | no ¬[]∈acc
+    = map′ (step x) (step⁻¹ x ¬[]∈e ¬[]∈acc) (searchND xs e (eat x (e ∣ acc)) ¬[]∈e)
 
   search : Decidable (Match (Infix _≡_))
-  search xs e with searchND xs e ∅
+  search xs e with []∈? e
+  ... | yes []∈e = yes (MkMatch [] []∈e (here []))
+  ... | no ¬[]∈e with searchND xs e ∅ ¬[]∈e
   ... | no ¬p        = no (¬p ∘′ inj₁)
   ... | yes (inj₁ p) = yes p
   ... | yes (inj₂ p) = ⊥-elim (∈⁻¹-∅ (match p))
