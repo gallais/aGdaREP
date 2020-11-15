@@ -18,7 +18,7 @@ open import Relation.Nullary.Product   using (_×-dec_)
 open import Relation.Nullary.Sum       using (_⊎-dec_)
 
 import Relation.Unary  as U
-import Relation.Binary as B
+open import Relation.Binary using (Decidable)
 import Relation.Binary.PropositionalEquality as P
 
 open DecPoset P? renaming (Carrier to A)
@@ -45,7 +45,7 @@ open import Text.Regex.Base preorder
              $ ([]∈? e) ×-dec ([]∈? f)
 []∈? (e ⋆)   = yes (star (sum (inj₁ ε)))
 
-_∈ᴿ?_ : B.Decidable _∈ᴿ_
+_∈ᴿ?_ : Decidable _∈ᴿ_
 c ∈ᴿ? [ a ]     = map′ [_] (λ where [ eq ] → eq)
                 $ c ≟ a
 c ∈ᴿ? (lb ─ ub) = map′ (uncurry _─_) (λ where (ge ─ le) → ge , le)

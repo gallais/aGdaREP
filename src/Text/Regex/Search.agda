@@ -16,7 +16,8 @@ open import Data.List.Relation.Binary.Prefix.Heterogeneous
 open import Data.List.Relation.Binary.Infix.Heterogeneous
   using (Infix; here; there) hiding (module Infix)
 import Data.List.Relation.Binary.Infix.Heterogeneous.Properties as Infixₚ
-open import Data.List.Relation.Binary.Pointwise using (Pointwise; []; _∷_)
+open import Data.List.Relation.Binary.Pointwise
+  as Pointwise using (Pointwise; []; _∷_)
 open import Data.List.Relation.Binary.Suffix.Heterogeneous
   using (Suffix; here; there) hiding (module Suffix)
 
@@ -151,33 +152,54 @@ module Infix where
 
 module Whole where
 
-  []ᴹ : ∀ {e} → [] ∈ e → Match (Pointwise _≡_) [] e
-  []ᴹ p = MkMatch [] p []
+  whole : ∀ xs e → xs ∈ e → Match (Pointwise _≡_) xs e
+  whole xs e p = MkMatch xs p (Pointwise.refl refl)
 
-  []⁻¹ᴹ : ∀ {e} → Match (Pointwise _≡_) [] e → [] ∈ e
-  []⁻¹ᴹ (MkMatch .[] p []) = p
-
-  _∷ᴹ_ : ∀ {xs e} x → Match (Pointwise _≡_) xs (eat x e) → Match (Pointwise _≡_) (x ∷ xs) e
-  x ∷ᴹ (MkMatch ys ys∈e\x ys≤xs) = MkMatch (x ∷ ys) (eat-sound x _ ys∈e\x) (refl ∷ ys≤xs)
-
-  _∷⁻¹ᴹ_ : ∀ {xs e} x → Match (Pointwise _≡_) (x ∷ xs) e → Match (Pointwise _≡_) xs (eat x e)
-  x ∷⁻¹ᴹ (MkMatch (._ ∷ ys) ys∈e (refl ∷ ys≤xs)) = MkMatch ys (eat-complete _ _ ys∈e) ys≤xs
+  whole⁻¹ : ∀ xs e → Match (Pointwise _≡_) xs e → xs ∈ e
+  whole⁻¹ xs e (MkMatch ys ys∈e p) with Pointwise.Pointwise-≡⇒≡ p
+  whole⁻¹ xs e (MkMatch .xs xs∈e p) | refl = xs∈e
 
   search : Decidable (Match (Pointwise _≡_))
-  search [] e = map′ []ᴹ []⁻¹ᴹ ([]∈? e)
-  search (x ∷ xs) e = map′ (x ∷ᴹ_) (x ∷⁻¹ᴹ_) (search xs (eat x e))
+  search xs e = map′ (whole xs e) (whole⁻¹ xs e) (xs ∈? e)
 
 module Suffix where
 
+  []⁻¹ᴹ : ∀ {e acc} → Match (Suffix _≡_) [] e ⊎ Match (Pointwise _≡_) [] acc → [] ∈ e ⊎ [] ∈ acc
+  []⁻¹ᴹ (inj₁ (MkMatch .[] ys∈e (here []))) = inj₁ ys∈e
+  []⁻¹ᴹ (inj₂ (MkMatch .[] ys∈acc []))      = inj₂ ys∈acc
+
+  step : ∀ {e acc} x {xs} →
+         Match (Suffix _≡_) xs e ⊎ Match (Pointwise _≡_) xs (eat x (e ∣ acc)) →
+         Match (Suffix _≡_) (x ∷ xs) e ⊎ Match (Pointwise _≡_) (x ∷ xs) acc
+  step x (inj₁ (MkMatch ys ys∈e p)) = inj₁ (MkMatch ys ys∈e (there p))
+  step {e} {acc} x (inj₂ (MkMatch ys ys∈e p)) with eat-sound x (e ∣ acc) ys∈e
+  ... | sum (inj₁ xys∈e)   = inj₁ (MkMatch (x ∷ ys) xys∈e (here (refl ∷ p)))
+  ... | sum (inj₂ xys∈acc) = inj₂ (MkMatch (x ∷ ys) xys∈acc (refl ∷ p))
+
+  step⁻¹ : ∀ {e acc} x {xs} →
+           Match (Suffix _≡_) (x ∷ xs) e ⊎ Match (Pointwise _≡_) (x ∷ xs) acc →
+           Match (Suffix _≡_) xs e ⊎ Match (Pointwise _≡_) xs (eat x (e ∣ acc))
+  -- match starts later
+  step⁻¹ x (inj₁ (MkMatch ys ys∈e (there p))) = inj₁ (MkMatch ys ys∈e p)
+  -- match starts here!
+  step⁻¹ {e} {acc} x (inj₁ (MkMatch (.x ∷ ys) ys∈e (here (refl ∷ p))))
+    = inj₂ (MkMatch ys (eat-complete x (e ∣ acc) (sum (inj₁ ys∈e))) p)
+  step⁻¹ {e} {acc} x (inj₂ (MkMatch (.x ∷ ys) ys∈e (refl ∷ p)))
+    = inj₂ (MkMatch ys (eat-complete x (e ∣ acc) (sum (inj₂ ys∈e))) p)
+
+  searchND : ∀ xs e acc → Dec (Match (Suffix _≡_) xs e ⊎ Match (Pointwise _≡_) xs acc)
+  searchND []       e acc with []∈? e | []∈? acc
+  ... | yes []∈e | _          = yes (inj₁ (MkMatch [] []∈e (here [])))
+  ... | _        | yes []∈acc = yes (inj₂ (MkMatch [] []∈acc []))
+  ... | no ¬[]∈e | no ¬[]∈acc = no ([ ¬[]∈e , ¬[]∈acc ]′ ∘′ []⁻¹ᴹ)
+  searchND (x ∷ xs) e acc
+    = map′ (step x) (step⁻¹ x) (searchND xs e (eat x (e ∣ acc)))
+
   search : Decidable (Match (Suffix _≡_))
-  search xs e with Whole.search xs e
-  ... | yes p = yes (map here p)
-  search []       e | no ¬p = no (¬p ∘′ map λ where (here p) → p)
-  search (x ∷ xs) e | no ¬p with search xs e
-  ... | yes q = yes (map there q)
-  ... | no ¬q = no λ where
-    (MkMatch ys ys∈e (here p))  → ¬p (MkMatch ys ys∈e p)
-    (MkMatch ys ys∈e (there q)) → ¬q (MkMatch ys ys∈e q)
+  search xs e with searchND xs e ∅
+  ... | no ¬p = no (¬p ∘′ inj₁)
+  ... | yes (inj₁ p) = yes p
+  ... | yes (inj₂ p) = ⊥-elim (∈⁻¹-∅ (match p))
 
 ------------------------------------------------------------------------
 -- Search for the user-specified span

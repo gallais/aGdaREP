@@ -4,13 +4,14 @@ open import Relation.Binary using (DecPoset)
 
 module Text.Regex.Derivative {a e r} (P? : DecPoset a e r) where
 
-open import Data.Empty
+open import Data.Empty using (⊥-elim)
 open import Data.List.Base using (List; []; _∷_)
-open import Data.List.Properties
-open import Data.Sum.Base as Sum
+open import Data.Sum.Base as Sum using (inj₁; inj₂)
 
-open import Function
+open import Function.Base using (_$_; _∘′_; case_of_)
 open import Relation.Nullary using (Dec; yes; no)
+open import Relation.Nullary.Decidable using (map′)
+open import Relation.Binary using (Decidable)
 open import Relation.Binary.PropositionalEquality using (refl; cong)
 
 open DecPoset P? using (preorder) renaming (Carrier to A)
@@ -35,6 +36,9 @@ eat a (e R.∙ f) = case []∈? e of λ where
   (yes _) → (eat a e ∙ f) ∣ (eat a f)
   (no ¬p) → eat a e ∙ f
 eat a (e R.⋆)   = eat a e ∙ (e ⋆)
+
+------------------------------------------------------------------------
+-- This action is sound and complete with respect to matching
 
 eat-sound : ∀ x {xs} e → xs ∈ eat x e → (x ∷ xs) ∈ e
 eat-sound x ε         pr = ⊥-elim (∈⁻¹-∅ pr)
@@ -82,3 +86,10 @@ eat-complete x (e R.⋆) (star (sum (inj₂ (prod {[]} refl p q)))) =
 eat-complete x (e R.⋆) (star (sum (inj₂ (prod {_ ∷ _} refl p q)))) =
   ∙-complete (eat x e) (e ⋆) $ prod refl (eat-complete x e p) $
   ⋆-complete e q
+
+------------------------------------------------------------------------
+-- Consequence: matching is decidable
+
+_∈?_ : Decidable _∈_
+[]       ∈? e = []∈? e
+(x ∷ xs) ∈? e = map′ (eat-sound x e) (eat-complete x e) (xs ∈? eat x e)
