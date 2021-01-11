@@ -11,20 +11,11 @@ open import Relation.Binary.Construct.StrictToNonStrict _≈_ _<_
 ------------------------------------------------------------------------
 -- Re-exporting the base definitions
 
-private
-  dto : DecTotalOrder _ _ _
-  dto = record { isDecTotalOrder = isDecTotalOrder Charₚ.<-isStrictTotalOrder-≈ }
-
-  dpo : DecPoset _ _ _
-  dpo = let open DecTotalOrder dto in decPoset
-
-  po : Preorder _ _ _
-  po = let open DecTotalOrder dto in preorder
-
 open import Level using (0ℓ)
 open import Level.Bounded as Level≤ using (embed)
 open import Data.List.Sized.Interface using (Sized)
 open import Text.Parser.Types
+open import Text.Parser.Types.Core
 open import Text.Parser.Monad
 open import Text.Parser.Combinators
 open import Text.Regex.Lexer
@@ -36,9 +27,8 @@ private
 letter : ∀[ Parser P (embed Char) ]
 letter = let instance _ = Agdarsec′.monadPlus in maybeTok isCHAR
 
-open import Text.Regex.Base po public
-open import Text.Regex.Search dpo public
-open import Text.Regex.Parser po letter using (parse) public
+open import Text.Regex.String public
+open import Text.Regex.Parser Charₚ.≤-preorder letter using (parse) public
 
 ------------------------------------------------------------------------
 -- Additional functions
@@ -50,14 +40,18 @@ ignoreCaseRange (lb ─ ub) = (toLower lb ─ toLower ub) ∷ (toUpper lb ─ to
 ignoreCaseRanges : List Range → List Range
 ignoreCaseRanges = concatMap ignoreCaseRange
 
-ignoreCase : Exp → Exp
-ignoreCase ∅       = ∅
-ignoreCase ε       = ε
-ignoreCase [ a ]   = [  ignoreCaseRanges a ]
-ignoreCase [^ a ]  = [^ ignoreCaseRanges a ]
-ignoreCase (e ∣ f) = ignoreCase e ∣ ignoreCase f
-ignoreCase (e ∙ f) = ignoreCase e ∙ ignoreCase f
-ignoreCase (e ⋆)   = ignoreCase e ⋆
+module _ where
+
+  open Exp using (_∣_; _∙_; _⋆)
+
+  ignoreCase : Exp → Exp
+  ignoreCase ∅       = ∅
+  ignoreCase ε       = ε
+  ignoreCase [ a ]   = [  ignoreCaseRanges a ]
+  ignoreCase [^ a ]  = [^ ignoreCaseRanges a ]
+  ignoreCase (e ∣ f) = ignoreCase e Exp.∣ ignoreCase f
+  ignoreCase (e ∙ f) = ignoreCase e Exp.∙ ignoreCase f
+  ignoreCase (e ⋆)   = ignoreCase e Exp.⋆
 
 
 -- test

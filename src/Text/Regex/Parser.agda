@@ -1,5 +1,6 @@
 open import Level.Bounded as Level≤ using (embed)
 open import Text.Parser.Types
+open import Text.Parser.Types.Core
 open import Text.Parser.Monad
 
 open import Relation.Binary using (Preorder)

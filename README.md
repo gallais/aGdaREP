@@ -18,7 +18,7 @@ Requirements
 
 This project should compile using:
 
-* Agda version 2.6.1
+* Agda version 2.6.1.1
 * The standard library (dev version)
 * [Agdarsec](https://github.com/gallais/agdarsec) (dev version)
 

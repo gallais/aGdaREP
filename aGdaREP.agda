@@ -5,6 +5,7 @@ open import Codata.Musical.Notation
 open import Data.Unit.Polymorphic using (⊤)
 open import Data.Bool.Base using (Bool; true; false; if_then_else_)
 open import Data.Char as Char using (Char; _≈_)
+import Data.Char.Properties as Charₚ
 open import Data.String.Base as String using (String; lines)
 open import Data.List.Base as List using (List; []; _∷_; _++_)
 open import Data.Maybe.Base as Maybe using (Maybe; nothing; just; maybe′)
@@ -17,6 +18,7 @@ open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open import lib.Nullary
 
+open import Text.Regex.Base Charₚ.≤-preorder using (updateExp)
 open import Text.Regex.Char
 
 open import Data.List.Relation.Binary.Infix.Heterogeneous using (Infix; MkView; toView)
@@ -35,7 +37,7 @@ select opt e str = dec (search target regex) ifYes ifNo
     target = String.toList str
 
     grab : ∀ {cs} → Match (Span regex _≡_) cs exp  → String
-    grab (MkMatch inf _ prf) with toView (toInfix regex prf)
+    grab (mkMatch inf _ prf) with toView (toInfix regex prf)
     ... | MkView pref _ suff = String.fromList
          $ pref ++ String.toList "\x1B[1m\x1B[31m"
         ++ inf  ++ String.toList "\x1B[0m"
